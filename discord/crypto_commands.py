@@ -125,6 +125,14 @@ class Crypto(object):
     if val_old is None:
       await self.bot.say('Symbol data not found')
     elif val is not None:
-      await self.bot.say('%s is currently at $%.2f (%s %.2f in the past %d hours)' % (symbol.upper(), val, "%", ((val-val_old) / val_old) * 100, int(time)))
+      change = ((val-val_old) / val_old) * 100
+      if(change > 20):
+          meme = "https://i.redd.it/rn32uylurwdz.gif"
+      elif(change > 0):
+          meme = "https://i.redd.it/yx4o4otzjpfz.gif"
+      else:
+          meme = "https://i.redd.it/4y6efz4jb3dz.gif"
+      await self.bot.say('%s is currently at $%.2f (%s %.2f in the past %d hours) \n %s' %
+                         (symbol.upper(), val, "%", change, int(time), meme))
     else:
       await self.bot.say('Unknown symbol %s.' % symbol.upper())
