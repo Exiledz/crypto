@@ -4,15 +4,15 @@ import json
 from tabulate import tabulate
 
 STORAGE_DIR = os.path.expanduser('~/portfolios')
-if not os.path.exists(STORAGE_DIR):
-  os.mkdir(STORAGE_DIR)
 
 _portfolios = {}
-
 def GetPortfolio(user_id):
   if user_id in _portfolios:
     return _portfolios[user_id]
-  return _Portfolio(user_id)
+
+  _portfolios[user_id] = _Portfolio(user_id)
+  return _portfolios[user_id]
+
 
 class _Portfolio(object):
 

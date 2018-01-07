@@ -44,7 +44,7 @@ class _CoinDataPoint(object):
     self.coin_data = coin_data
 
   def __lt__(self, oth):
-    self.timestamp < oth.timestamp
+    return self.timestamp < oth.timestamp
 
   def __repr__(self):
     return "_CoinDataPoint object at timestamp %s" % self.timestamp
@@ -68,7 +68,7 @@ class _CoinDataSet(object):
   def _DumpCurrentDayToFile(self):
     # Midnight in unix time (system time zone)
     midnight = datetime.combine(date.today(), time.min)
-    midnight_unix = int(midnight.strftime('%s'))
+    midnight_unix = int(midnight.timestamp())
 
     # All data since midnight.
     data_to_dump = list(self._data.irange(_CoinDataPoint(midnight_unix)))
@@ -77,9 +77,9 @@ class _CoinDataSet(object):
     with open(filestr, 'w') as fp:
       json.dump(data_to_dump, fp, cls=_CDPEncoder)
 
-  def GetLatest(self, ticker):
+  def GetLatest(self, symbol):
     try:
-      return float(self._data[-1].coin_data[ticker])
+      return float(self._data[-1].coin_data[symbol])
     except KeyError:
       return None
 
