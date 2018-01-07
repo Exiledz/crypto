@@ -42,7 +42,7 @@ class CoinDataSet(object):
     if os.path.exists('coinhistory'):
       for filename in os.listdir('coinhistory'):
         with open(os.path.join('coinhistory',filename), 'r') as fp:
-          datapoint_list = json.load(fp)
+          datapoint_list = json.load(fp, object_hook=CDPEncoder.decode_hook)
           self._data.update(datapoint_list)
     else:
       os.mkdir('coinhistory')
