@@ -8,7 +8,7 @@ from coin_data import CoinDataSet
 
 DESCRIPTION = """An example bot to showcase the discord.ext.commands extension module.
 There are a number of utility commands being showcased here."""
-bot = commands.Bot(command_prefix='?', description=DESCRIPTION)
+bot = commands.Bot(command_prefix='!', description=DESCRIPTION)
 
 coin_data = CoinDataSet()
 
@@ -21,7 +21,7 @@ async def track_coin_market_cap():
     try:
       for channel in bot.get_all_channels():
         if channel.type is ChannelType.text:
-          await bot.send_message(channel, 'XRB is currently at %s' % coin_data.GetLatest('XRB'))
+          await bot.send_message(channel, 'XRB is currently at $%s.' % coin_data.GetLatest('XRB'))
     except Exception as e:
       print('EXCEPTION %s' % e)
       pass
@@ -38,6 +38,13 @@ async def on_ready():
 async def add(left : int, right : int):
   """Adds two numbers together."""
   await bot.say(left + right)
+
+@bot.command()
+async def price(ticker : str):
+  """Price a cryptocurrency."""
+  val = coin_data.GetLatest(ticker.upper())
+  if val is not None:
+    await bot.say('%s is currently at $%s.' % (ticker.upper(), val))
 
 @bot.command()
 async def roll(dice : str):
