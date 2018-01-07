@@ -58,17 +58,14 @@ class _Portfolio(object):
   def AsTable(self):
     tuples = []
     for symbol in self._data:
-      print(self._data[symbol])
-      print(type(self._data[symbol]))
-      print(type(CoinData.GetLatest(symbol)))
       curr_value = self._data[symbol]*CoinData.GetLatest(symbol)
       tuples.append([
           symbol, 
-          '%.4f' % float(self._data[symbol]),
+          float(self._data[symbol]),
           '$%.2f' % curr_value,
           curr_value
       ])
-    tuples = sorted(tuples, key=lambda x: x[3], reverse = True)
+    tuples = sorted(tuples, key=lambda x: x[3], reverse=True)
     for t in tuples:
       t.pop()
-    return tabulate(tuples, tablefmt='orgtbl')
+    return tabulate(tuples, tablefmt='fancy_grid', floatfmt='.4f')

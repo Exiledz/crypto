@@ -26,7 +26,7 @@ class Crypto(object):
     else:
       await self.bot.say('Unknown symbol %s.' % symbol.upper())
 
-  @commands.command(alias='init', pass_context=True)
+  @commands.command(aliases=['init'], pass_context=True)
   async def portfolio_init(self, ctx, *amount_and_symbol : str):
     """Initialize your portfolio with a list of coins.
     
@@ -38,7 +38,7 @@ class Crypto(object):
       portfolio.SetOwnedCurrency(amount_and_symbol[i], amount_and_symbol[i+1])
     portfolio.Save()
 
-  @commands.command(pass_context=True)
+  @commands.command(aliases=['value'], pass_context=True)
   async def portfolio_value(self, ctx):
     """Check the value of your portfolio."""
     user_id = ctx.message.author.id
@@ -91,11 +91,12 @@ class Crypto(object):
                        (ctx.message.author, portfolio.Value()))
     portfolio.Save()
 
-  @commands.command(alias='list', pass_context=True)
+  @commands.command(aliases=['list, display'], pass_context=True)
   async def portfolio_list(self, ctx):
+    """Display your portfolio."""
     user_id = ctx.message.author.id
     portfolio = GetPortfolio(user_id)
     await self.bot.say(
         '```%s\'s portfolio:\n'
-        'Total Value: %s\n'
+        'Total Value: $%s\n'
         '%s```' % (ctx.message.author, portfolio.Value(), portfolio.AsTable()))
