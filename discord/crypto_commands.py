@@ -1,6 +1,7 @@
 from discord.ext import commands
 from portfolio import GetPortfolio
 import user_helper
+import datetime
 
 class Crypto(object):
   """Crypto related commands."""
@@ -37,7 +38,7 @@ class Crypto(object):
     portfolio = GetPortfolio(user.id)
     for i in range(0, len(amount_and_symbol),2):
       portfolio.SetOwnedCurrency(amount_and_symbol[i], amount_and_symbol[i+1])
-    await self.bot.say('%s\'s portfolio is now worth $%.2f.' % 
+    await self.bot.say('%s\'s portfolio is now worth $%.2f.' %
                        (ctx.message.author, portfolio.Value()))
     portfolio.Save()
 
@@ -109,3 +110,29 @@ class Crypto(object):
         '```%s\'s portfolio:\n'
         'Total Value: $%s\n'
         '%s```' % (user, portfolio.Value(), portfolio.AsTable()))
+
+  @commands.command(pass_context=True)
+  async def history(self, ctx, symbol, time=24):
+    """Reports performance history of a given coin.
+
+    To be called with a coin parameter, followed by an optional time
+    parameter, to be in the format of (N)(s | m | h | d | y). If no
+    parameter for timedelta is provided, 24 hours will be used.
+    """
+    past_time = datetime.datetime.now() - datetime.timedelta(hours=int(time))
+    val_old = self.coin_data.GetNearest(past_time.timestamp(), symbol.upper())
+    val = self.coin_data.GetLatest(symbol.upper())
+    if val_old is None:
+      await self.bot.say('Symbol data not found')
+    elif val is not None:
+      change = ((val-val_old) / val_old) * 100
+      if(change > 20):
+          meme = "https://i.redd.it/rn32uylurwdz.gif"
+      elif(change > 0):
+          meme = "https://i.redd.it/yx4o4otzjpfz.gif"
+      else:
+          meme = "https://i.redd.it/4y6efz4jb3dz.gif"
+      await self.bot.say('%s is currently at $%.2f (%s %.2f in the past %d hours) \n %s' %
+                         (symbol.upper(), val, "%", change, int(time), meme))
+    else:
+      await self.bot.say('Unknown symbol %s.' % symbol.upper())
