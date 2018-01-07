@@ -83,6 +83,17 @@ class _CoinDataSet(object):
     except KeyError:
       return None
 
+  def GetNearest(self, time, ticker):
+    try:
+      bisect_point = self._data.bisect_left(_CoinDataPoint(time))
+      if(bisect_point) is 0:
+        return None
+      return float(self._data[bisect_point].coin_data[ticker])
+    except IndexError:
+      return None
+    except KeyError:
+      return None
+
 # Create a Singleton.
 # TODO(brandonsalmon): Gotta be a better way to do this?
 CoinData = _CoinDataSet()
