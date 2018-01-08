@@ -48,7 +48,7 @@ class _Portfolio(object):
   def Value(self):
     value = 0.0
     for symbol in self._data:
-      value += self._data[symbol]*CoinData.GetLatest(symbol)
+      value += self._data[symbol]*CoinData.GetValue(symbol)
     return value
 
   def Save(self):
@@ -58,7 +58,7 @@ class _Portfolio(object):
   def AsTable(self):
     tuples = []
     for symbol in self._data:
-      curr_value = self._data[symbol]*CoinData.GetLatest(symbol)
+      curr_value = self._data[symbol]*CoinData.GetValue(symbol)
       tuples.append([
           symbol, 
           float(self._data[symbol]),

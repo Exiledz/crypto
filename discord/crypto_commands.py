@@ -1,7 +1,8 @@
 from discord.ext import commands
 from portfolio import GetPortfolio
-import user_helper
+import util
 import datetime
+import meme_helper
 
 class Crypto(object):
   """Crypto related commands."""
@@ -13,7 +14,7 @@ class Crypto(object):
   @commands.command()
   async def price(self, symbol : str):
     """Get the price of a crypto currency."""
-    val = self.coin_data.GetLatest(symbol.upper())
+    val = self.coin_data.GetValue(symbol)
     if val is not None:
       await self.bot.say('%s is currently at $%s.' % (symbol.upper(), val))
     else:
@@ -22,7 +23,7 @@ class Crypto(object):
   @commands.command()
   async def price(self, symbol : str):
     """Get the price of a crypto currency."""
-    val = self.coin_data.GetLatest(symbol.upper())
+    val = self.coin_data.GetValue(symbol)
     if val is not None:
       await self.bot.say('%s is currently at $%.2f.' % (symbol.upper(), val))
     else:
@@ -48,7 +49,7 @@ class Crypto(object):
     if not user:
       user = ctx.message.author
     else:
-      user = user_helper.GetUserFromNameStr(ctx.message.server.members, user)
+      user = util.GetUserFromNameStr(ctx.message.server.members, user)
     portfolio = GetPortfolio(user.id)
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' % 
                        (user, portfolio.Value()))
@@ -104,7 +105,7 @@ class Crypto(object):
     if not user:
       user = ctx.message.author
     else:
-      user = user_helper.GetUserFromNameStr(ctx.message.server.members, user)
+      user = util.GetUserFromNameStr(ctx.message.server.members, user)
     portfolio = GetPortfolio(user.id)
     await self.bot.say(
         '```%s\'s portfolio:\n'
@@ -112,27 +113,27 @@ class Crypto(object):
         '%s```' % (user, portfolio.Value(), portfolio.AsTable()))
 
   @commands.command(pass_context=True)
-  async def history(self, ctx, symbol, time=24):
+  async def history(self, ctx, symbol, *time_str):
     """Reports performance history of a given coin.
 
     To be called with a coin parameter, followed by an optional time
     parameter, to be in the format of (N)(s | m | h | d | y). If no
-    parameter for timedelta is provided, 24 hours will be used.
+    parameter for timedelta is provided, 24h will be used.
     """
-    past_time = datetime.datetime.now() - datetime.timedelta(hours=int(time))
-    val_old = self.coin_data.GetNearest(past_time.timestamp(), symbol.upper())
-    val = self.coin_data.GetLatest(symbol.upper())
+    if not time_str:
+      time_str = ['24', 'hours']
+    time_str = ' '.join(time_str)
+    td = util.GetTimeDelta(time_str)
+    past_time = datetime.datetime.now() - td
+    val_old = self.coin_data.GetValue(symbol, past_time.timestamp())
+    val = self.coin_data.GetValue(symbol)
     if val_old is None:
-      await self.bot.say('Symbol data not found')
+      await self.bot.say('No data for %s %s ago.' % (symbol.upper(), time_str))
     elif val is not None:
       change = ((val-val_old) / val_old) * 100
-      if(change > 20):
-          meme = "https://i.redd.it/rn32uylurwdz.gif"
-      elif(change > 0):
-          meme = "https://i.redd.it/yx4o4otzjpfz.gif"
-      else:
-          meme = "https://i.redd.it/4y6efz4jb3dz.gif"
-      await self.bot.say('%s is currently at $%.2f (%s %.2f in the past %d hours) \n %s' %
-                         (symbol.upper(), val, "%", change, int(time), meme))
+      txt = '%s is currently at $%.2f (%.2f%s in the past %s)' % (
+                 symbol.upper(), val, change, "%", time_str)
+      await self.bot.say(
+          meme_helper.PossiblyAddMemeToTxt(txt, symbol.upper(), change, td))
     else:
       await self.bot.say('Unknown symbol %s.' % symbol.upper())
