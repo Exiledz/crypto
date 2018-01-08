@@ -1,8 +1,12 @@
 from discord.ext import commands
-from portfolio import GetPortfolio, ClearPortfolioData
+from portfolio import GetPortfolio, ClearPortfolioData, GetPortfolioCreationDate, GetPortfolioValueList
+import matplotlib
+# Force matplotlib to not use any Xwindows backend.
+matplotlib.use('Agg')
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import pandas as pd
 import util
 import datetime
 import time
@@ -120,20 +124,21 @@ class Portfolio(object):
     portfolio.Save()
 
   @commands.command(pass_context=True)
-  async def graph(self):
+  async def graph(self, ctx):
     """Graph portfolios."""
     user = ctx.message.author
-    start_t = portfolio.GetPortfolioCreationDate(user.id)
+    start_t = GetPortfolioCreationDate(user.id)
     end_t = int(time.time())
-    t_list = list(range(start_t, end_t, (start_t-end_t)/100)) + [end_t]
-    y_values = portfolio.GetPortfolioValueList(user.id, t_list)
+    t_list = list(range(start_t, end_t, (end_t-start_t)//100)) + [end_t]
+    y_values = GetPortfolioValueList(user.id, t_list)
     x_values = [
         mdates.date2num(datetime.datetime.fromtimestamp(t)) for t in t_list]
     # build the figure
     fig, ax = plt.subplots()
-    df = pd.DataFrame({'usd': y_values, 'dates': x_values})
+    df = pd.DataFrame({'USD': y_values, 'time': x_values})
     df['subject'] = 0
-    sns.tsplot(data=df, value='usd', time='dates', unit='subject')
+    graph = sns.tsplot(data=df, value='USD', time='time', unit='subject')
+    graph.set_title('%s\'s gainz' % user)
 
     # assign locator and formatter for the xaxis ticks.
     ax.xaxis.set_major_locator(mdates.AutoDateLocator())
@@ -143,7 +148,7 @@ class Portfolio(object):
     fig.autofmt_xdate()
     plt.savefig('/tmp/fig.png')
 
-    self.bot.upload('/tmp/fig.png')
+    await self.bot.upload('/tmp/fig.png')
 
 
   @commands.command(aliases=['display'], pass_context=True)

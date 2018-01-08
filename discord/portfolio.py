@@ -17,13 +17,16 @@ if not os.path.exists(STORAGE_DIR):
 _portfolio_sets = {}
 
 def GetPortfolioCreationDate(user_id):
+  if user_id not in _portfolio_sets:
+    _portfolio_sets[user_id] = _PortfolioSet(user_id)
+
   try:
     return _portfolio_sets[user_id]._data[0].timestamp
-  except KeyError, IndexError:
+  except (KeyError, IndexError) as e:
     return -1
 
 def GetPortfolioValueList(user_id, t_list):
-  return [GetPortfolio(user_id, t).value(t) for t in t_list]
+  return [GetPortfolio(user_id, t).Value(t) for t in t_list]
 
 def GetPortfolio(user_id, timestamp=None):
   if user_id in _portfolio_sets:
