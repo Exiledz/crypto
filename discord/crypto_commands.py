@@ -20,15 +20,6 @@ class Crypto(object):
     else:
       await self.bot.say('Unknown symbol %s.' % symbol.upper())
 
-  @commands.command()
-  async def price(self, symbol : str):
-    """Get the price of a crypto currency."""
-    val = self.coin_data.GetValue(symbol)
-    if val is not None:
-      await self.bot.say('%s is currently at $%.2f.' % (symbol.upper(), val))
-    else:
-      await self.bot.say('Unknown symbol %s.' % symbol.upper())
-
   @commands.command(aliases=['init'], pass_context=True)
   async def portfolio_init(self, ctx, *amount_and_symbol : str):
     """Initialize your portfolio with a list of coins.
@@ -37,6 +28,7 @@ class Crypto(object):
     """
     user = ctx.message.author
     portfolio = GetPortfolio(user.id)
+    print(portfolio)
     for i in range(0, len(amount_and_symbol),2):
       portfolio.SetOwnedCurrency(amount_and_symbol[i], amount_and_symbol[i+1])
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' %

@@ -1,4 +1,18 @@
-#!/usr/bin/env python3
+"""Logic for dealing with coin data / prices over time.
+
+Has a global CoinData object which can be called to get the
+value of a crypto currency at a specific time, or at the current
+time. This object is kept up to date through the coin market cap api
+when a thread/ event loop is running TrackCoins.
+
+Coin data is constantly written to the ~/coinhistory folder, and
+is reloaded from the ~/coinhistory folder on import.
+
+Currently, all coin data is a stored in a SortedSet of CoinDataPoints.
+
+TODO(brandonsalmon): This should probably be a database, because we might
+start to run out of memory after a few weeks...
+"""
 import os
 import json
 import coinmarketcap
@@ -97,5 +111,5 @@ class _CoinDataSet(object):
       return None
 
 # Create a Singleton.
-# TODO(brandonsalmon): Gotta be a better way to do this?
+# TODO(brandonsalmon): See top of file.
 CoinData = _CoinDataSet()
