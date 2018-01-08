@@ -28,7 +28,6 @@ class Crypto(object):
     """
     user = ctx.message.author
     portfolio = GetPortfolio(user.id)
-    print(portfolio)
     for i in range(0, len(amount_and_symbol),2):
       portfolio.SetOwnedCurrency(amount_and_symbol[i], amount_and_symbol[i+1])
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' %
