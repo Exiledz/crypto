@@ -29,7 +29,7 @@ class _PortfolioEncoder(json.JSONEncoder):
   @staticmethod
   def decode_hook(dct):
     if '_portfolio_data' in dct:
-      return _CoinDataPoint(dct['timestamp'], dct['coin_data'])
+      return _PortfolioAtTimestamp(dct['user_id'], dct['timestamp'], dct['_portfolio_data'])
     return dct
 
   def default(self, obj):
