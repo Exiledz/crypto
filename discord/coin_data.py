@@ -51,19 +51,26 @@ class _CoinDataPoint(object):
 
 class _CoinDataSet(object):
   
-  def __init__(self):
+  def __init__(self, init_from_file=True):
     self._market = coinmarketcap.Market()
     self._data = SortedSet()
-    for filename in os.listdir(STORAGE_DIR):
-      with open(os.path.join(STORAGE_DIR,filename), 'r') as fp:
-        datapoint_list = json.load(fp, object_hook=_CDPEncoder.decode_hook)
-        self._data.update(datapoint_list)
+    if init_from_file:
+      for filename in os.listdir(STORAGE_DIR):
+        with open(os.path.join(STORAGE_DIR,filename), 'r') as fp:
+          datapoint_list = json.load(fp, object_hook=_CDPEncoder.decode_hook)
+          self._data.update(datapoint_list)
 
   def _DownloadNewDataPoint(self):
     cmc_dict = self._market.ticker(limit=0)
     data_to_store = {coin["symbol"]: coin["price_usd"] for coin in cmc_dict}
     self._data.add(_CoinDataPoint(timestamp(), data_to_store))
     self._DumpCurrentDayToFile()
+
+  def _DumpAllToFile(self, filestr):
+    data_to_dump = list(self._data)
+
+    with open(filestr, 'w') as fp:
+      json.dump(data_to_dump, fp, cls=_CDPEncoder)
 
   def _DumpCurrentDayToFile(self):
     # Midnight in unix time (system time zone)
