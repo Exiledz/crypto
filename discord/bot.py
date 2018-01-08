@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import crypto_commands
 import general_commands
+import portfolio_commands
 
 import discord
 from discord.ext import commands
@@ -17,5 +18,6 @@ async def on_ready():
 
 bot.loop.create_task(coin_data.TrackCoins())
 bot.add_cog(crypto_commands.Crypto(bot, coin_data.CoinData))
+bot.add_cog(portfolio_commands.Portfolio(bot, coin_data.CoinData))
 bot.add_cog(general_commands.General(bot))
 bot.run(open('/etc/crypto-bot-token', 'r').read())

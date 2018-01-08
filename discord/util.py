@@ -1,7 +1,30 @@
 """Utility functions that didn't fit anywhere else."""
 import difflib
 import re
-from datetime import timedelta
+from datetime import timedelta, datetime
+import pytz
+
+def GetTimestamp(s):
+  """Convert 'YYYY/MM/DD(HH:MM:SS)' strings to a unix timestamp.
+  
+  Note: Currently all users are in US west timezone, so we should offset
+    by that?
+  """
+  if not s:
+    return None
+  try:
+    naive = datetime.strptime(s, '%Y/%m/%d')
+  except ValueError:
+    naive = datetime.strptime(s, '%Y/%m/%d(%H:%M:%S)')
+
+  # https://stackoverflow.com/a/79877
+  local = pytz.timezone("America/Los_Angeles") 
+  # Note is_dst=True will give us slightly incorrect data during ambiguous
+  # dst transitions, but it is better than the alternative.
+  local_dt = local.localize(naive, is_dst=True)
+  utc_dt = local_dt.astimezone(pytz.utc)
+  return utc_dt.timestamp()
+
 
 def GetUserFromNameStr(users, name_str):
   """Given an iterable of discord.Users, find the one with the closest name."""

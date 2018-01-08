@@ -103,7 +103,7 @@ class _CoinDataSet(object):
       if not time:
         return float(self._data[-1].coin_data[symbol.upper()])
       else:
-        bisect_point = self._data.bisect_left(_CoinDataPoint(time))
+        bisect_point = self._data.bisect(_CoinDataPoint(time))
         if(bisect_point) is 0:
           return None
         return float(self._data[bisect_point-1].coin_data[symbol.upper()])

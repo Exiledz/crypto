@@ -1,6 +1,6 @@
 """Logic for dealing with portfolios / portfolio changes over time.
 
-Portfolios are stored on disk as a json of a list _Portfolio objects.
+Portfolios are stored on disk as a json of a list _PortfolioAtTimestamp objects.
 """
 from coin_data import CoinData
 from sortedcontainers import SortedSet
@@ -15,14 +15,22 @@ if not os.path.exists(STORAGE_DIR):
   os.mkdir(STORAGE_DIR)
 
 _portfolio_sets = {}
-# We need to use copy.deepcopy here because nobody old data needs
-# to be kept.
 def GetPortfolio(user_id, timestamp=None):
   if user_id in _portfolio_sets:
-    return copy.deepcopy(_portfolio_sets[user_id].GetPortfolio(timestamp))
+    return _portfolio_sets[user_id].GetPortfolio(timestamp)
 
   _portfolio_sets[user_id] = _PortfolioSet(user_id)
-  return copy.deepcopy(_portfolio_sets[user_id].GetPortfolio(timestamp))
+  return _portfolio_sets[user_id].GetPortfolio(timestamp)
+
+def ClearPortfolioData(user_id):
+  try:
+    del _portfolio_sets[user_id]
+  except KeyError:
+    pass
+  try:
+    os.remove(os.path.join(STORAGE_DIR, str(user_id)))
+  except FileNotFoundError:
+    pass
 
 class _PortfolioEncoder(json.JSONEncoder):
 
@@ -38,7 +46,6 @@ class _PortfolioEncoder(json.JSONEncoder):
 
     return obj.__dict__
 
-
 class _PortfolioSet(object):
 
   def __init__(self, user_id):
@@ -52,17 +59,26 @@ class _PortfolioSet(object):
         self._data.update(datapoint_list)
 
   def GetPortfolio(self, timestamp=None):
+    rval = None
     try:
       if not timestamp:
-        return self._data[-1]
+        rval = self._data[-1]
       else:
-        bisect_point = self._data.bisect_left(_PortfolioAtTimestamp(timestamp))
-        if(bisect_point) is 0:
-          return None
-        return self._data[bisect_point-1]
+        bisect_point = self._data.bisect(_PortfolioAtTimestamp(0, timestamp))
+        if bisect_point > 0:
+          rval = self._data[bisect_point-1]
     except (IndexError, KeyError):
-      # No portfolio at the specified time, return empty portfolio.
+      pass
+
+    # No portfolio at the specified time, return empty portfolio.
+    if not rval:
       return _PortfolioAtTimestamp(self.user_id, timestamp or time.time())
+    # We need to use copy.deepcopy here because nobody old data needs
+    # to be kept. The timestamp is set as requested, so the copied portfolio
+    # can simply be saved.
+    rval = copy.deepcopy(rval)
+    rval.timestamp = timestamp or time.time()
+    return rval
 
   def AddPortfolio(self, portfolio):
     self._data.add(portfolio)
@@ -114,10 +130,8 @@ class _PortfolioAtTimestamp(object):
       value += self._portfolio_data[symbol]*CoinData.GetValue(symbol)
     return value
 
-  def Save(self):
-    _portfolio_sets[self.user_id].AddPortfolio(
-        _PortfolioAtTimestamp(self.user_id, time.time(), 
-                              data=self._portfolio_data))
+  def Save(self, timestamp=None):
+    _portfolio_sets[self.user_id].AddPortfolio(self)
     _portfolio_sets[self.user_id].Save()
 
   def AsTable(self):
