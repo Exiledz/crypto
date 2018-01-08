@@ -15,6 +15,16 @@ if not os.path.exists(STORAGE_DIR):
   os.mkdir(STORAGE_DIR)
 
 _portfolio_sets = {}
+
+def GetPortfolioCreationDate(user_id):
+  try:
+    return _portfolio_sets[user_id]._data[0].timestamp
+  except KeyError, IndexError:
+    return -1
+
+def GetPortfolioValueList(user_id, t_list):
+  return [GetPortfolio(user_id, t).value(t) for t in t_list]
+
 def GetPortfolio(user_id, timestamp=None):
   if user_id in _portfolio_sets:
     return _portfolio_sets[user_id].GetPortfolio(timestamp)
@@ -124,10 +134,10 @@ class _PortfolioAtTimestamp(object):
     except KeyError:
       return 0
 
-  def Value(self):
+  def Value(self, timestamp=None):
     value = 0.0
     for symbol in self._portfolio_data:
-      value += self._portfolio_data[symbol]*CoinData.GetValue(symbol)
+      value += self._portfolio_data[symbol]*CoinData.GetValue(symbol, timestamp)
     return value
 
   def Save(self, timestamp=None):

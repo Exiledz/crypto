@@ -1,7 +1,11 @@
 from discord.ext import commands
 from portfolio import GetPortfolio, ClearPortfolioData
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import util
 import datetime
+import time
 import meme_helper
 
 class Portfolio(object):
@@ -114,6 +118,33 @@ class Portfolio(object):
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' % 
                        (user, portfolio.Value()))
     portfolio.Save()
+
+  @commands.command(pass_context=True)
+  async def graph(self):
+    """Graph portfolios."""
+    user = ctx.message.author
+    start_t = portfolio.GetPortfolioCreationDate(user.id)
+    end_t = int(time.time())
+    t_list = list(range(start_t, end_t, (start_t-end_t)/100)) + [end_t]
+    y_values = portfolio.GetPortfolioValueList(user.id, t_list)
+    x_values = [
+        mdates.date2num(datetime.datetime.fromtimestamp(t)) for t in t_list]
+    # build the figure
+    fig, ax = plt.subplots()
+    df = pd.DataFrame({'usd': y_values, 'dates': x_values})
+    df['subject'] = 0
+    sns.tsplot(data=df, value='usd', time='dates', unit='subject')
+
+    # assign locator and formatter for the xaxis ticks.
+    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y.%m.%d'))
+
+    # put the labels at 45deg since they tend to be too long
+    fig.autofmt_xdate()
+    plt.savefig('/tmp/fig.png')
+
+    self.bot.upload('/tmp/fig.png')
+
 
   @commands.command(aliases=['display'], pass_context=True)
   async def list(self, ctx, user=None, date=None):
