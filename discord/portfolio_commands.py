@@ -1,5 +1,5 @@
 from discord.ext import commands
-from portfolio import GetPortfolio, ClearPortfolioData, GetPortfolioCreationDate, GetPortfolioValueList
+from portfolio import GetPortfolio, ClearPortfolioData, GetPortfolioCreationDate, GetPortfolioValueList, GetPortfolioChange
 import matplotlib
 # Force matplotlib to not use any Xwindows backend.
 matplotlib.use('Agg')
@@ -11,6 +11,13 @@ import util
 import datetime
 import time
 import meme_helper
+import os
+
+if os.name != 'nt':
+  GRAPHLOC = '/tmp/fig.png'
+else:
+  GRAPHLOC = 'fig.png'
+
 
 class Portfolio(object):
   """Commands related to interacting with portfolios."""
@@ -124,11 +131,20 @@ class Portfolio(object):
     portfolio.Save()
 
   @commands.command(pass_context=True)
-  async def graph(self, ctx):
+  async def graph(self, ctx, user=None, start_t="", end_t=""):
     """Graph portfolios."""
-    user = ctx.message.author
-    start_t = GetPortfolioCreationDate(user.id)
-    end_t = int(time.time())
+    if not user:
+      user = ctx.message.author
+    else:
+      user = util.GetUserFromNameStr(ctx.message.server.members, user)
+    if start_t is "":
+      start_t = GetPortfolioCreationDate(user.id)
+    else:
+      start_t = int(util.GetTimestamp(start_t))
+    if end_t is "":
+      end_t = int(time.time())
+    else:
+      end_t = int(util.GetTimestamp(end_t))
     t_list = list(range(start_t, end_t, (end_t-start_t)//100)) + [end_t]
     y_values = GetPortfolioValueList(user.id, t_list)
     x_values = [
@@ -146,10 +162,9 @@ class Portfolio(object):
 
     # put the labels at 45deg since they tend to be too long
     fig.autofmt_xdate()
-    plt.savefig('/tmp/fig.png')
+    plt.savefig(GRAPHLOC)
 
-    await self.bot.upload('/tmp/fig.png')
-
+    await self.bot.upload(GRAPHLOC)
 
   @commands.command(aliases=['display'], pass_context=True)
   async def list(self, ctx, user=None, date=None):
@@ -163,3 +178,17 @@ class Portfolio(object):
         '```%s\'s portfolio:\n'
         'Total Value: $%s\n'
         '%s```' % (user, portfolio.Value(), portfolio.AsTable()))
+
+  @commands.command(aliases=['performance'], pass_context=True)
+  async def perf(self, ctx, user=None, date=None):
+    """Display your portfolio, or optionally another user's portfolio with price per coin."""
+    if not user:
+      user = ctx.message.author
+    else:
+      user = util.GetUserFromNameStr(ctx.message.server.members, user)
+    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
+    change = GetPortfolioChange(user.id)
+    await self.bot.say(
+        '```%s\'s portfolio:\n'
+        'Total Value: $%s (%.2f%s) \n'
+        '%s```' % (user, portfolio.Value(), change, "%", portfolio.AsTable(True, True)))
