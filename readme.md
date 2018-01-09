@@ -17,6 +17,7 @@ You will need to acquire a client id for your bot, and place that in a text file
 - [ ] Meme usage with graphs, lists, performance
 - [ ] Daily rankings
 - [ ] Become PEP8 compliant
+- [ ] Alerts PM to users based on drastic change in value
 
 ### Prerequisites
 
