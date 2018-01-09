@@ -37,12 +37,13 @@ def GetPortfolio(user_id, timestamp=None):
   return _portfolio_sets[user_id].GetPortfolio(timestamp)
 
 def GetPortfolioChange(user_id):
-    current = GetPortfolio(user_id)
-    old = GetPortfolio((datetime.today() - timedelta(days=1)).timestamp())
-    if old.Empty():
-        return 0.0
-    change = 100*((current.Value() - old.Value()) / old.Value())
-    return change
+  current = GetPortfolio(user_id)
+  timestamp = (datetime.now() - timedelta(days=1)).timestamp()
+  old = GetPortfolio(user_id, timestamp)
+  if old.Empty():
+    return 0.0
+  change = 100*((current.Value() - old.Value(timestamp)) / old.Value())
+  return change
 
 def ClearPortfolioData(user_id):
   try:
@@ -159,24 +160,18 @@ class _PortfolioAtTimestamp(object):
     _portfolio_sets[self.user_id].AddPortfolio(self)
     _portfolio_sets[self.user_id].Save()
 
-  def AsTable(self, per_coin=False, percent_change=False):
+  def AsTable(self):
     tuples = []
     for symbol in self._portfolio_data:
-      if not per_coin:
-        curr_value = self._portfolio_data[symbol]*CoinData.GetValue(symbol)
-      else:
-        curr_value = CoinData.GetValue(symbol)
+      curr_value = self._portfolio_data[symbol]*CoinData.GetValue(symbol)
       change_day = CoinData.GetDayChange(symbol)
       tuples.append([
           symbol, 
           float(self._portfolio_data[symbol]),
-          '$%.2f' % curr_value,
-          '%.2f%s' % (change_day, "%"),
+          '$%.2f (%.2f%s)' % (curr_value, change_day, "%"),
           curr_value
       ])
     tuples = sorted(tuples, key=lambda x: x[3], reverse=True)
     for t in tuples:
-      if not percent_change:
-          t.pop()
       t.pop()
     return tabulate(tuples, tablefmt='fancy_grid', floatfmt='.4f')

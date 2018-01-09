@@ -173,22 +173,9 @@ class Portfolio(object):
       user = ctx.message.author
     else:
       user = util.GetUserFromNameStr(ctx.message.server.members, user)
-    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
-    await self.bot.say(
-        '```%s\'s portfolio:\n'
-        'Total Value: $%s\n'
-        '%s```' % (user, portfolio.Value(), portfolio.AsTable()))
-
-  @commands.command(aliases=['performance'], pass_context=True)
-  async def perf(self, ctx, user=None, date=None):
-    """Display your portfolio, or optionally another user's portfolio with price per coin."""
-    if not user:
-      user = ctx.message.author
-    else:
-      user = util.GetUserFromNameStr(ctx.message.server.members, user)
-    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
     change = GetPortfolioChange(user.id)
+    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
     await self.bot.say(
         '```%s\'s portfolio:\n'
         'Total Value: $%s (%.2f%s) \n'
-        '%s```' % (user, portfolio.Value(), change, "%", portfolio.AsTable(True, True)))
+        '%s```' % (user, portfolio.Value(), change, "%", portfolio.AsTable()))
