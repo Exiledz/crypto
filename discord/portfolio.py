@@ -5,6 +5,7 @@ Portfolios are stored on disk as a json of a list _PortfolioAtTimestamp objects.
 from coin_data import CoinData
 from sortedcontainers import SortedSet
 from tabulate import tabulate
+from datetime import datetime, date, time, timedelta
 import json
 import os
 import time
@@ -34,6 +35,14 @@ def GetPortfolio(user_id, timestamp=None):
 
   _portfolio_sets[user_id] = _PortfolioSet(user_id)
   return _portfolio_sets[user_id].GetPortfolio(timestamp)
+
+def GetPortfolioChange(user_id):
+    current = GetPortfolio(user_id)
+    old = GetPortfolio((datetime.today() - timedelta(days=1)).timestamp())
+    if old.Empty():
+        return 0.0
+    change = 100*((current.Value() - old.Value()) / old.Value())
+    return change
 
 def ClearPortfolioData(user_id):
   try:
@@ -116,6 +125,9 @@ class _PortfolioAtTimestamp(object):
   def __lt__(self, oth):
     return self.timestamp < oth.timestamp
 
+  def Empty(self):
+    return len(self._portfolio_data) == 0
+
   def SetOwnedCurrency(self, amount, symbol):
     if amount == 0:
       if symbol.upper() in self._portfolio_data:
@@ -147,17 +159,24 @@ class _PortfolioAtTimestamp(object):
     _portfolio_sets[self.user_id].AddPortfolio(self)
     _portfolio_sets[self.user_id].Save()
 
-  def AsTable(self):
+  def AsTable(self, per_coin=False, percent_change=False):
     tuples = []
     for symbol in self._portfolio_data:
-      curr_value = self._portfolio_data[symbol]*CoinData.GetValue(symbol)
+      if not per_coin:
+        curr_value = self._portfolio_data[symbol]*CoinData.GetValue(symbol)
+      else:
+        curr_value = CoinData.GetValue(symbol)
+      change_day = CoinData.GetDayChange(symbol)
       tuples.append([
           symbol, 
           float(self._portfolio_data[symbol]),
           '$%.2f' % curr_value,
+          '%.2f%s' % (change_day, "%"),
           curr_value
       ])
     tuples = sorted(tuples, key=lambda x: x[3], reverse=True)
     for t in tuples:
+      if not percent_change:
+          t.pop()
       t.pop()
     return tabulate(tuples, tablefmt='fancy_grid', floatfmt='.4f')

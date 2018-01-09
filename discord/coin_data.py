@@ -110,6 +110,14 @@ class _CoinDataSet(object):
     except (IndexError, KeyError):
       return None
 
+  def GetDayChange(self, symbol):
+    currentVal = self.GetValue(symbol)
+    yesterday_time = datetime.today() - timedelta(days=1)
+    oldVal = self.GetValue(symbol, yesterday_time.timestamp())
+    if oldVal is None:
+      return None
+    return 100*((currentVal - oldVal) / oldVal)
+
 # Create a Singleton.
 # TODO(brandonsalmon): See top of file.
 CoinData = _CoinDataSet()
