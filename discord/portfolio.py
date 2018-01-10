@@ -42,7 +42,7 @@ def GetPortfolioChange(user_id):
   old = GetPortfolio(user_id, timestamp)
   if old.Empty():
     return 0.0
-  change = 100*((current.Value() - old.Value(timestamp)) / old.Value())
+  change = 100*((current.Value() - old.Value(timestamp)) / old.Value(timestamp))
   return change
 
 def ClearPortfolioData(user_id):
