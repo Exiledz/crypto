@@ -193,16 +193,3 @@ class Portfolio(object):
         '```%s\'s portfolio diversity breakdown:\n'
         'Total Value: $%s (%.2f%s) \n'
         '%s```' % (user, portfolio.Value(), change, "%", portfolio.BreakTable()))
-
-  #THIS DOES NOT WORK, DO NOT CALL
-  async def listScheduleHelper(self, user, timeInterval):
-    while True:
-      message = '```%s\'s portfolio:\n Total Value: $%s (%.2f%s) \n %s```' % (user, portfolio.Value(), change, "%", portfolio.AsTable())
-      #self.bot.send_message(user, message)
-      #await asyncio.sleep(timeInterval)
-
-  @commands.command(aliases=['sched'], pass_context=True)
-  async def schedule(self, ctx, command : str, timeInterval = 300):
-    if(command == "list"):
-      user = ctx.message.author
-      #self.listScheduleHelepr(user, timeInterval)
