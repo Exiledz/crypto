@@ -133,7 +133,6 @@ class Portfolio(object):
   @commands.command(pass_context=True)
   async def graph(self, ctx, start_t="", user=None, end_t=""):
     """Graph portfolios."""
-    print(util.GetTimeDelta(start_t).total_seconds())
     if not user:
       user = ctx.message.author
     else:
@@ -146,8 +145,6 @@ class Portfolio(object):
       end_t = int(datetime.datetime.now().timestamp())
     else:
       end_t = int(util.GetTimestamp(end_t))
-    print(start_t)
-    print(end_t)
     t_list = list(range(start_t, end_t, (end_t-start_t)//100)) + [end_t]
     y_values = GetPortfolioValueList(user.id, t_list)
     x_values = [
