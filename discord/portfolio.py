@@ -175,3 +175,15 @@ class _PortfolioAtTimestamp(object):
     for t in tuples:
       t.pop()
     return tabulate(tuples, tablefmt='fancy_grid', floatfmt='.4f')
+
+  def BreakTable(self):
+    tuples = []
+    for symbol in self._portfolio_data:
+      curr_value = self._portfolio_data[symbol]*CoinData.GetValue(symbol)
+      tuples.append([
+          symbol,
+          float(self._portfolio_data[symbol]),
+          '%.2f%s' % ((curr_value / self.Value())*100, "%"),
+      ])
+    tuples = sorted(tuples, key=lambda x: x[2], reverse=True)
+    return tabulate(tuples, tablefmt='fancy_grid', floatfmt='.4f')
