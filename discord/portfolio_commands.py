@@ -131,7 +131,7 @@ class Portfolio(object):
     portfolio.Save()
 
   @commands.command(pass_context=True)
-  async def graph(self, ctx, user=None, start_t="", end_t=""):
+  async def graph(self, ctx, start_t="", user=None, end_t=""):
     """Graph portfolios."""
     if not user:
       user = ctx.message.author
@@ -140,9 +140,9 @@ class Portfolio(object):
     if start_t is "":
       start_t = GetPortfolioCreationDate(user.id)
     else:
-      start_t = int(util.GetTimestamp(start_t))
+      start_t = int((datetime.datetime.now() - util.GetTimeDelta(start_t)).timestamp())
     if end_t is "":
-      end_t = int(time.time())
+      end_t = int(datetime.datetime.now().timestamp())
     else:
       end_t = int(util.GetTimestamp(end_t))
     t_list = list(range(start_t, end_t, (end_t-start_t)//100)) + [end_t]
@@ -166,7 +166,7 @@ class Portfolio(object):
 
     await self.bot.upload(GRAPHLOC)
 
-  @commands.command(aliases=['display'], pass_context=True)
+  @commands.command(aliases=['display', 'ls'], pass_context=True)
   async def list(self, ctx, user=None, date=None):
     """Display your portfolio, or optionally another user's portfolio."""
     if not user:
@@ -179,3 +179,17 @@ class Portfolio(object):
         '```%s\'s portfolio:\n'
         'Total Value: $%s (%.2f%s) \n'
         '%s```' % (user, portfolio.Value(), change, "%", portfolio.AsTable()))
+
+  @commands.command(aliases=['bd'], pass_context=True)
+  async def breakdown(self, ctx, user=None, date=None):
+    """Display your portfolio, or optionally another user's portfolio."""
+    if not user:
+      user = ctx.message.author
+    else:
+      user = util.GetUserFromNameStr(ctx.message.server.members, user)
+    change = GetPortfolioChange(user.id)
+    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
+    await self.bot.say(
+        '```%s\'s portfolio diversity breakdown:\n'
+        'Total Value: $%s (%.2f%s) \n'
+        '%s```' % (user, portfolio.Value(), change, "%", portfolio.BreakTable()))
