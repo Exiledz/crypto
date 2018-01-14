@@ -13,6 +13,8 @@ Currently, all coin data is a stored in a SortedSet of CoinDataPoints.
 TODO(brandonsalmon): This should probably be a database, because we might
 start to run out of memory after a few weeks...
 """
+import traceback
+import sys
 import os
 import json
 import coinmarketcap
@@ -22,6 +24,7 @@ from sortedcontainers import SortedSet
 from datetime import datetime, date, time, timedelta
 from time import time as timestamp
 import asyncio
+import util
 
 STORAGE_DIR = os.path.expanduser('~/coinhistory')
 if not os.path.exists(STORAGE_DIR):
@@ -32,7 +35,7 @@ async def TrackCoins():
     try:
       CoinData._DownloadNewDataPoint()
     except Exception as e:
-      print('Exception in UpdateCoins: %s' % e)
+      print('Exception in UpdateCoins:\n%s' % (traceback.format_exc()))
     await asyncio.sleep(300)
 
 
@@ -76,7 +79,10 @@ class _CoinDataSet(object):
 
   def _DownloadNewDataPoint(self):
     cmc_dict = self._market.ticker(limit=0)
-    data_to_store = {coin["symbol"]: coin["price_usd"] for coin in cmc_dict}
+    def GetPriceFloat(price_str_or_null):
+      price_str = price_str_or_null or '0'
+      return float(price_str.replace(',',''))
+    data_to_store = {coin["symbol"]: GetPriceFloat(coin["price_usd"]) for coin in cmc_dict}
     self._data.add(_CoinDataPoint(timestamp(), data_to_store))
     self._DumpCurrentDayToFile()
 
@@ -101,12 +107,12 @@ class _CoinDataSet(object):
   def GetValue(self, symbol, time=None):
     try:
       if not time:
-        return float(self._data[-1].coin_data[symbol.upper()])
+        return self._data[-1].coin_data[symbol.upper()]
       else:
         bisect_point = self._data.bisect(_CoinDataPoint(time))
         if(bisect_point) is 0:
           return None
-        return float(self._data[bisect_point-1].coin_data[symbol.upper()])
+        return self._data[bisect_point-1].coin_data[symbol.upper()]
     except (IndexError, KeyError):
       return None
 
@@ -121,3 +127,4 @@ class _CoinDataSet(object):
 # Create a Singleton.
 # TODO(brandonsalmon): See top of file.
 CoinData = _CoinDataSet()
+#print('Size of CoinData is %s MB' % (util.GetSize(CoinData) / 1024 / 1024))
