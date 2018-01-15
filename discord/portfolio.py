@@ -17,6 +17,11 @@ if not os.path.exists(STORAGE_DIR):
 
 _portfolio_sets = {}
 
+def HasPortfolio(user_id):
+  # side effect, add to _portfolio_sets.
+  portfolio = GetPortfolio(user_id)
+  return len(_portfolio_sets[user_id]._data) > 0
+
 def GetPortfolioCreationDate(user_id):
   if user_id not in _portfolio_sets:
     _portfolio_sets[user_id] = _PortfolioSet(user_id)

@@ -1,23 +1,10 @@
 from discord.ext import commands
-from portfolio import GetPortfolio, ClearPortfolioData, GetPortfolioCreationDate, GetPortfolioValueList, GetPortfolioChange
-import matplotlib
-# Force matplotlib to not use any Xwindows backend.
-matplotlib.use('Agg')
-import seaborn as sns
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import pandas as pd
+from portfolio import GetPortfolio, ClearPortfolioData, GetPortfolioCreationDate, GetPortfolioValueList, GetPortfolioChange, HasPortfolio
 import util
 import datetime
 import time
 import meme_helper
-import os
-
-if os.name != 'nt':
-  GRAPHLOC = '/tmp/fig.png'
-else:
-  GRAPHLOC = 'fig.png'
-
+import graph
 
 class Portfolio(object):
   """Commands related to interacting with portfolios."""
@@ -130,40 +117,20 @@ class Portfolio(object):
     portfolio.Save()
 
   @commands.command(pass_context=True)
-  async def graph(self, ctx, start_t="", user=None, end_t=""):
+  async def graph(self, ctx, time_delta="", *users : str):
     """Graph portfolios."""
-    if not user:
-      user = ctx.message.author
+    if not users:
+      users = [user for user in ctx.message.server.members if HasPortfolio(user.id)]
     else:
-      user = util.GetUserFromNameStr(ctx.message.server.members, user)
-    if start_t is "":
-      start_t = GetPortfolioCreationDate(user.id)
+      users = [util.GetUserFromNameStr(ctx.message.server.members, user)
+               for user in user]
+    if time_delta is "":
+      start_t = min(GetPortfolioCreationDate(user.id) for user in users)
     else:
-      start_t = int((datetime.datetime.now() - util.GetTimeDelta(start_t)).timestamp())
-    if end_t is "":
-      end_t = int(datetime.datetime.now().timestamp())
-    else:
-      end_t = int(util.GetTimestamp(end_t))
-    t_list = list(range(start_t, end_t, (end_t-start_t)//100)) + [end_t]
-    y_values = GetPortfolioValueList(user.id, t_list)
-    x_values = [
-        mdates.date2num(datetime.datetime.fromtimestamp(t)) for t in t_list]
-    # build the figure
-    fig, ax = plt.subplots()
-    df = pd.DataFrame({'USD': y_values, 'time': x_values})
-    df['subject'] = 0
-    graph = sns.tsplot(data=df, value='USD', time='time', unit='subject')
-    graph.set_title('%s\'s gainz' % user)
-
-    # assign locator and formatter for the xaxis ticks.
-    ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y.%m.%d'))
-
-    # put the labels at 45deg since they tend to be too long
-    fig.autofmt_xdate()
-    plt.savefig(GRAPHLOC)
-
-    await self.bot.upload(GRAPHLOC)
+      start_t = int((datetime.datetime.now() - util.GetTimeDelta(time_delta)).timestamp())
+    end_t = int(datetime.datetime.now().timestamp())
+    graph_file = graph.GraphPortfolioTimeSeries('Gainz', users, start_t, end_t)
+    await self.bot.upload(graph_file)
 
   @commands.command(aliases=['display', 'ls'], pass_context=True)
   async def list(self, ctx, user=None, date=None):

@@ -13,6 +13,7 @@ _coin_cache = {}
 # TODO(brandonsalmon): Move TrackCoins to a different executable so that we
 # reduce the likelihood of having price data gaps.
 async def TrackCoins():
+  await asyncio.sleep(100)
   while True:
     try:
       _DownloadNewDataPoint()
