@@ -123,7 +123,7 @@ class Portfolio(object):
       users = [user for user in ctx.message.server.members if HasPortfolio(user.id)]
     else:
       users = [util.GetUserFromNameStr(ctx.message.server.members, user)
-               for user in user]
+               for user in users]
     if time_delta is "":
       start_t = min(GetPortfolioCreationDate(user.id) for user in users)
     else:
