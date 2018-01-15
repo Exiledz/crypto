@@ -22,9 +22,8 @@ else:
 class Portfolio(object):
   """Commands related to interacting with portfolios."""
 
-  def __init__(self, bot, coin_data):
+  def __init__(self, bot):
     self.bot = bot
-    self.coin_data = coin_data
 
   @commands.command(aliases=['reinit'], pass_context=True)
   async def init(self, ctx, *amount_and_symbol : str):

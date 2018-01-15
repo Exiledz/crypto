@@ -3,18 +3,19 @@ from portfolio import GetPortfolio
 import util
 import datetime
 import meme_helper
+import coin_data
 
 class Crypto(object):
   """Commands for checking the value of / interacting with cryptocurrencies."""
 
-  def __init__(self, bot, coin_data):
+  def __init__(self, bot):
     self.bot = bot
     self.coin_data = coin_data
 
   @commands.command()
   async def price(self, symbol : str):
     """Get the price of a crypto currency."""
-    val = self.coin_data.GetValue(symbol)
+    val = coin_data.GetHistory(symbol).GetValue()
     if val is not None:
       await self.bot.say('%s is currently at $%s.' % (symbol.upper(), val))
     else:
@@ -33,8 +34,9 @@ class Crypto(object):
     time_str = ' '.join(time_str)
     td = util.GetTimeDelta(time_str)
     past_time = datetime.datetime.now() - td
-    val_old = self.coin_data.GetValue(symbol, past_time.timestamp())
-    val = self.coin_data.GetValue(symbol)
+    history = coin_data.GetHistory(symbol)
+    val_old = history.GetValue(past_time.timestamp())
+    val = history.GetValue()
     if val_old is None:
       await self.bot.say('No data for %s %s ago.' % (symbol.upper(), time_str))
     elif val is not None:

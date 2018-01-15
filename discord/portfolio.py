@@ -2,7 +2,6 @@
 
 Portfolios are stored on disk as a json of a list _PortfolioAtTimestamp objects.
 """
-from coin_data import CoinData
 from sortedcontainers import SortedSet
 from tabulate import tabulate
 from datetime import datetime, date, time, timedelta
@@ -10,6 +9,7 @@ import json
 import os
 import time
 import copy
+import coin_data
 
 STORAGE_DIR = os.path.expanduser('~/portfolios')
 if not os.path.exists(STORAGE_DIR):
@@ -153,7 +153,8 @@ class _PortfolioAtTimestamp(object):
   def Value(self, timestamp=None):
     value = 0.0
     for symbol in self._portfolio_data:
-      value += self._portfolio_data[symbol]*CoinData.GetValue(symbol, timestamp)
+      price = coin_data.GetHistory(symbol).GetValue(timestamp)
+      value += self._portfolio_data[symbol]*price
     return value
 
   def Save(self, timestamp=None):
@@ -163,8 +164,10 @@ class _PortfolioAtTimestamp(object):
   def AsTable(self):
     tuples = []
     for symbol in self._portfolio_data:
-      curr_value = self._portfolio_data[symbol]*CoinData.GetValue(symbol)
-      change_day = CoinData.GetDayChange(symbol)
+      history = coin_data.GetHistory(symbol)
+      price = history.GetValue()
+      curr_value = self._portfolio_data[symbol]*price
+      change_day = history.GetDayChange()
       tuples.append([
           symbol, 
           float(self._portfolio_data[symbol]),
@@ -179,11 +182,15 @@ class _PortfolioAtTimestamp(object):
   def BreakTable(self):
     tuples = []
     for symbol in self._portfolio_data:
-      curr_value = self._portfolio_data[symbol]*CoinData.GetValue(symbol)
+      price = coin_data.GetHistory(symbol).GetValue()
+      curr_value = self._portfolio_data[symbol]*price
       tuples.append([
           symbol,
           float(self._portfolio_data[symbol]),
           '%.2f%s' % ((curr_value / self.Value())*100, "%"),
+          (curr_value / self.Value())*100
       ])
-    tuples = sorted(tuples, key=lambda x: x[2], reverse=True)
+    tuples = sorted(tuples, key=lambda x: x[3], reverse=True)
+    for t in tuples:
+      t.pop()
     return tabulate(tuples, tablefmt='fancy_grid', floatfmt='.4f')

@@ -1,8 +1,9 @@
 """Utility functions that didn't fit anywhere else."""
-import difflib
-import re
 from datetime import timedelta, datetime
+import difflib
+import os
 import pytz
+import re
 
 def GetTimestamp(s):
   """Convert 'YYYY/MM/DD(HH:MM:SS)' strings to a unix timestamp.
@@ -44,6 +45,14 @@ def GetUserFromNameStr(users, name_str):
       best_score_so_far = score
       best_user_so_far = user
   return best_user_so_far
+
+
+def GetSettingsFilepath(filename):
+  if os.name != 'nt':
+    return '/etc/%s' % filename
+  else:
+    return filename
+
 
 def GetTimeDelta(time_str):
   """Given a time string, convert it to seconds (an integer).
