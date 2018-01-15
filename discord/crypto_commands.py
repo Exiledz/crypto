@@ -1,5 +1,4 @@
 from discord.ext import commands
-from portfolio import GetPortfolio
 import util
 import datetime
 import meme_helper

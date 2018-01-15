@@ -1,10 +1,10 @@
 from discord.ext import commands
-from portfolio import GetPortfolio, ClearPortfolioData, GetPortfolioCreationDate, GetPortfolioValueList, GetPortfolioChange, HasPortfolio
 import util
 import datetime
 import time
 import meme_helper
 import graph
+import portfolio
 
 class Portfolio(object):
   """Commands related to interacting with portfolios."""
@@ -28,12 +28,13 @@ class Portfolio(object):
     example: !portfolio_init 0.13 BTC 127.514 XRB 2 ETH
     """
     user = ctx.message.author
-    portfolio = GetPortfolio(user.id)
+    p = portfolio.GetPortfolio(user.id)
+    tuples = []
     for i in range(0, len(amount_and_symbol),2):
-      portfolio.SetOwnedCurrency(amount_and_symbol[i], amount_and_symbol[i+1])
+      tuples.append((amount_and_symbol[i+1], float(amount_and_symbol[i])))
+    p.Init(tuples)
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' %
-                       (ctx.message.author, portfolio.Value()))
-    portfolio.Save()
+                       (ctx.message.author, p.Value()))
 
   @commands.command(aliases=['reset'], pass_context=True)
   async def clear(self, ctx, confirm=None):
@@ -42,11 +43,12 @@ class Portfolio(object):
     This pretty much should only be used if incorrect data is in your portfolio.
     """
     user = ctx.message.author
+    p = portfolio.GetPortfolio(user.id)
     if confirm != 'confirm':
       await self.bot.say('Are you sure you want to wipe out your portfolio and '
                          'its entire history? To confirm say "!clear confirm"')
     else:
-      ClearPortfolioData(user.id)
+      p.ClearRemote()
       await self.bot.say('Cleared all portfolio data for %s' % user)
 
 
@@ -57,9 +59,9 @@ class Portfolio(object):
       user = ctx.message.author
     else:
       user = util.GetUserFromNameStr(ctx.message.server.members, user)
-    portfolio = GetPortfolio(user.id)
+    p = portfolio.GetPortfolio(user.id)
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' % 
-                       (user, portfolio.Value()))
+                       (user, p.Value()))
 
   @commands.command(pass_context=True)
   async def buy(self, ctx, amount : float, symbol, date=None):
@@ -73,11 +75,10 @@ class Portfolio(object):
     cryptocurrencies, see !trade.
     """
     user = ctx.message.author
-    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
-    portfolio.Buy(amount, symbol)
+    p = portfolio.GetPortfolio(user.id)
+    p.Buy(symbol, amount, util.GetTimestamp(date))
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' % 
-                       (ctx.message.author, portfolio.Value()))
-    portfolio.Save()
+                       (ctx.message.author, p.Value()))
 
   @commands.command(pass_context=True)
   async def sell(self, ctx, amount : float, symbol, date=None):
@@ -91,11 +92,10 @@ class Portfolio(object):
     cryptocurrencies, see !trade.
     """
     user = ctx.message.author
-    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
-    portfolio.Sell(amount, symbol)
+    p = portfolio.GetPortfolio(user.id)
+    p.Sell(symbol, amount, util.GetTimestamp(date))
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' % 
-                       (ctx.message.author, portfolio.Value()))
-    portfolio.Save()
+                       (ctx.message.author, p.Value()))
 
   @commands.command(pass_context=True)
   async def trade(self, ctx, sell_amount : float, sell_symbol, 
@@ -109,23 +109,23 @@ class Portfolio(object):
       !trade 1000 XRB 1 BTC
     """
     user = ctx.message.author
-    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
-    portfolio.Sell(sell_amount, sell_symbol)
-    portfolio.Buy(buy_amount, buy_symbol)
+    p = portfolio.GetPortfolio(user.id)
+    p.Trade(buy_symbol, buy_amount, sell_symbol, sell_amount,
+            util.GetTimestamp(date))
     await self.bot.say('%s\'s portfolio is now worth $%.2f.' % 
-                       (user, portfolio.Value()))
-    portfolio.Save()
+                       (user, p.Value()))
 
   @commands.command(pass_context=True)
   async def graph(self, ctx, time_delta="", *users : str):
     """Graph portfolios."""
     if not users:
-      users = [user for user in ctx.message.server.members if HasPortfolio(user.id)]
+      users = [user for user in ctx.message.server.members
+               if len(portfolio.GetPortfolio(user.id))]
     else:
       users = [util.GetUserFromNameStr(ctx.message.server.members, user)
                for user in users]
     if time_delta is "":
-      start_t = min(GetPortfolioCreationDate(user.id) for user in users)
+      start_t = min(portfolio.GetPortfolio(user.id).CreationDate() for user in users)
     else:
       start_t = int((datetime.datetime.now() - util.GetTimeDelta(time_delta)).timestamp())
     end_t = int(datetime.datetime.now().timestamp())
@@ -139,12 +139,13 @@ class Portfolio(object):
       user = ctx.message.author
     else:
       user = util.GetUserFromNameStr(ctx.message.server.members, user)
-    change = GetPortfolioChange(user.id)
-    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
+    timestamp = util.GetTimestamp(date)
+    p = portfolio.GetPortfolio(user.id)
     await self.bot.say(
         '```%s\'s portfolio:\n'
-        'Total Value: $%s (%.2f%s) \n'
-        '%s```' % (user, portfolio.Value(), change, "%", portfolio.AsTable()))
+        'Total Value: $%s (%s) \n'
+        '%s```' % (user, p.Value(timestamp), p.GetChange(timestamp),
+                   p.AsTable(timestamp)))
 
   @commands.command(aliases=['bd'], pass_context=True)
   async def breakdown(self, ctx, user=None, date=None):
@@ -153,9 +154,11 @@ class Portfolio(object):
       user = ctx.message.author
     else:
       user = util.GetUserFromNameStr(ctx.message.server.members, user)
-    change = GetPortfolioChange(user.id)
-    portfolio = GetPortfolio(user.id, util.GetTimestamp(date))
+    timestamp = util.GetTimestamp(date)
+    p = portfolio.GetPortfolio(user.id)
+    change = p.GetChange(timestamp)
     await self.bot.say(
         '```%s\'s portfolio diversity breakdown:\n'
-        'Total Value: $%s (%.2f%s) \n'
-        '%s```' % (user, portfolio.Value(), change, "%", portfolio.BreakTable()))
+        'Total Value: $%s (%s) \n'
+        '%s```' % (user, p.Value(timestamp), p.GetChange(timestamp),
+                   p.BreakTable(timestamp)))

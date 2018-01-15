@@ -5,9 +5,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
-from portfolio import GetPortfolioValueList
 import datetime
 import os
+import portfolio
 
 if os.name != 'nt':
   GRAPHLOC = '/tmp/fig.png'
@@ -22,7 +22,7 @@ def GraphPortfolioTimeSeries(title, users, start_t, end_t):
   fig, ax = plt.subplots()
   dfs = []
   for i, user in enumerate(users):
-    y_values = GetPortfolioValueList(user.id, t_list)
+    y_values = portfolio.GetPortfolio(user.id).GetValueList(t_list)
     df = pd.DataFrame({'USD': y_values, 'Date': x_values})
     df['unit'] = 'USD'
     df['User'] = ('%s' % user)

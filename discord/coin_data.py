@@ -68,21 +68,24 @@ class _CoinPriceHistory(SortedDict):
   def GetSymbol(self):
     return self._symbol
 
-  def GetValue(self, time=None):
+  def GetValue(self, timestamp=None):
     try:
-      if not time:
-        return self[self._list[-1]]
-      else:
-        bisect_point = self.bisect(time)
+      if timestamp:
+        bisect_point = self.bisect(timestamp)
         if(bisect_point) is 0:
-          return None
+          return 0.0
         return self[self._list[bisect_point-1]]
+      else:
+        return self[self._list[-1]]
     except (IndexError, KeyError):
-      return None
+      return 0.0
 
-  def GetDayChange(self):
-    currentVal = self.GetValue()
-    yesterday_time = datetime.today() - timedelta(days=1)
+  def GetDayChange(self, timestamp=None):
+    currentVal = self.GetValue(timestamp)
+    if timestamp:
+      yesterday_time = datetime.fromtimestamp(timestamp) - timedelta(days=1)
+    else:
+      yesterday_time = datetime.now() - timedelta(days=1)
     oldVal = self.GetValue(yesterday_time.timestamp())
     if oldVal is None:
       return None
